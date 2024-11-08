@@ -46,11 +46,28 @@ func handler(r server.Request) server.Response {
 		}
 	}
 
-	payloads := token.Claims.(jwt.RegisteredClaims)
+	payloads, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return server.Response{
+			StatusCode: 401,
+			Body:       "Unauthorized - Invalid token claims",
+		}
+	}
+
 	headers := convertHeaders(token.Header)
-	headers["iat"] = fmt.Sprintf("%v", payloads.IssuedAt)
-	headers["exp"] = fmt.Sprintf("%v", payloads.ExpiresAt)
-	headers["sub"] = fmt.Sprintf("%v", payloads.Subject)
+	headers["iat"] = fmt.Sprintf("%v", payloads["iat"])
+	headers["exp"] = fmt.Sprintf("%v", payloads["exp"])
+	headers["sub"] = fmt.Sprintf("%v", payloads["sub"])
+
+	username, ok := payloads["username"].(string)
+    if !ok {
+        return server.Response{
+            StatusCode: 401,
+            Body:       "Unauthorized - Username not found in token",
+        }
+    }
+
+    headers["username"] = username
 
 	return server.Response{
 		StatusCode: 200,
