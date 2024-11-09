@@ -84,7 +84,7 @@ func convertHeaders(headers map[string]interface{}) map[string]string {
 }
 
 func main() {
-	server.NewServer("jwt.sock", func(r server.Request) server.Response {
+	server.NewServer("jwt", func(r server.Request) server.Response {
 		return handler(r)
 	}).Start()
 }
