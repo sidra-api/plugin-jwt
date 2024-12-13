@@ -2,15 +2,26 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/sidra-gateway/go-pdk/server"
 )
 
-var secretKey = []byte("secret-key")
+var secretKey = []byte(getEnv("JWT_SECRET_KEY", "default-secret-key"))
 
-func verifyJWT(tokenString string) (bool, error, *jwt.Token) {
+// Fungsi getEnv membaca environment variable dengan nilai default jika tidak ditemukan
+func getEnv(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
+}
+
+// Fungsi verifyJWT untuk memverifikasi token JWT
+func verifyJWT(tokenString string) (bool, *jwt.Token, error) {
+	// Parsing token menggunakan metode verifikasi HMAC dan secretKey
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -20,11 +31,12 @@ func verifyJWT(tokenString string) (bool, error, *jwt.Token) {
 	})
 
 	if err != nil || !token.Valid {
-		return false, err, token
+		return false, token, err
 	}
-	return true, nil, token
+	return true, token, nil
 }
 
+// Fungsi handler adalah entry point untuk memproses request di Sidra Api
 func handler(r server.Request) server.Response {
 	authHeader := r.Headers["Authorization"]
 
@@ -37,7 +49,7 @@ func handler(r server.Request) server.Response {
 
 	tokenString := authHeader[len("Bearer "):]
 
-	valid, err, token := verifyJWT(tokenString)
+	valid, token, err := verifyJWT(tokenString)
 
 	if !valid || err != nil {
 		return server.Response{
@@ -75,6 +87,7 @@ func handler(r server.Request) server.Response {
 	}
 }
 
+// Fungsi convertHeaders mengubah header token (interface{}) menjadi map[string]string
 func convertHeaders(headers map[string]interface{}) map[string]string {
 	converted := make(map[string]string)
 	for key, value := range headers {
