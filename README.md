@@ -1,142 +1,126 @@
-# Plugin JWT for Sidra Api
+# Plugin JWT
 
-This repository contains a plugin for Sidra Api that verifies JWT (JSON Web Tokens) in HTTP requests. The plugin uses HMAC signing for token validation and can be easily integrated into the Sidra Api.
+## Deskripsi
+Plugin JWT adalah sebuah middleware untuk memverifikasi token JWT (JSON Web Token) pada Sidra Api. Plugin ini memeriksa validitas token, klaim, dan memberikan respons yang sesuai berdasarkan hasil verifikasi.
 
----
-
-## **Table of Contents**
-- [Features](#features)
-- [Environment Variables](#environment-variables)
-- [Installation and Usage](#installation-and-usage)
-  - [Build and Run with Docker](#build-and-run-with-docker)
-- [Plugin Workflow](#plugin-workflow)
-- [Endpoints and Responses](#endpoints-and-responses)
-- [Generate JWT Token](#generate-jwt-token)
-- [Testing](#testing)
+## Fitur Utama
+- Verifikasi JWT menggunakan metode HMAC.
+- Mendukung penggunaan **Environment Variables** untuk konfigurasi secret key.
+- Mengembalikan klaim token dalam header respons.
 
 ---
 
-## **Features**
-- Verifies JWT tokens passed in the `Authorization` header.
-- Extracts claims like `iat`, `exp`, `sub`, and `username` from the token.
-- Supports dynamic configuration via environment variables.
+## Instalasi
+### Prasyarat
+- Go versi 1.23 atau lebih tinggi.
+- Docker (opsional untuk membangun image).
 
----
-
-## **Environment Variables**
-This plugin supports the following environment variable:
-
-| Variable         | Default Value        | Description                           |
-|------------------|----------------------|---------------------------------------|
-| `JWT_SECRET_KEY` | `default-secret-key` | The secret key used to validate JWTs. |
-
-To override, set the `JWT_SECRET_KEY` variable in your runtime environment.
-
----
-
-## **Installation and Usage**
-
-### Build and Run with Docker
-
-1. **Clone the repository:**
+### Langkah Instalasi
+1. Clone repository:
    ```bash
-   git clone https://github.com/your-username/plugin-jwt.git
+   git clone <repository-url>
    cd plugin-jwt
    ```
+2. Jalankan perintah berikut untuk mengunduh dependencies:
+   ```bash
+   go mod tidy
+   ```
 
-2. **Build the Docker image:**
+3. Build plugin:
+   ```bash
+   go build -o plugin-jwt main.go
+   ```
+
+---
+
+## Konfigurasi Environment Variables
+Plugin menggunakan **JWT_SECRET_KEY** untuk menyimpan secret key. Jika variabel ini tidak disetel, plugin akan menggunakan nilai default `default-secret-key`.
+
+Set environment variable dengan perintah berikut:
+```bash
+export JWT_SECRET_KEY="your-secret-key"
+```
+
+---
+
+## Cara Menjalankan
+### Menggunakan Go Binary
+1. Jalankan binary secara langsung:
+   ```bash
+   ./plugin-jwt
+   ```
+
+### Menggunakan Docker
+1. Bangun image Docker:
    ```bash
    docker build -t plugin-jwt .
    ```
-
-3. **Run the Docker container:**
+2. Jalankan container:
    ```bash
    docker run -e JWT_SECRET_KEY="your-secret-key" -p 8080:8080 plugin-jwt
    ```
 
-The plugin will start and listen for incoming requests on port 8080.
+---
+
+## Workflow
+1. Klien mengirim request dengan header **Authorization** yang berisi token JWT dalam format `Bearer <token>`.
+2. Plugin memverifikasi token dengan langkah berikut:
+   - Memastikan token menggunakan metode signing yang valid (HMAC).
+   - Mengecek klaim token (iat, exp, sub, username).
+   - Menambahkan klaim valid ke header respons.
+3. Jika token valid, plugin mengembalikan status 200 dan klaim.
+4. Jika token tidak valid, plugin mengembalikan status 401.
 
 ---
 
-## **Plugin Workflow**
-1. The plugin extracts the `Authorization` header from incoming requests.
-2. It validates the JWT token:
-   - Ensures the token is signed using the `HS256` algorithm.
-   - Verifies the token signature using the configured secret key.
-3. If the token is valid, it extracts claims such as `iat`, `exp`, `username`, and includes them in the response headers.
-4. If the token is invalid or missing, it returns a `401 Unauthorized` response.
-
----
-
-## **Endpoints and Responses**
-### Example Request:
-```http
-GET /api/v1/resource HTTP/1.1
-Host: localhost:8080
-Authorization: Bearer <your-token>
-```
-
-### Responses:
-- **200 OK:**
-  The token is valid, and claims are included in the response headers.
-  ```json
-  {
-    "message": "Request authorized"
-  }
-  ```
-  
-  **Headers:**
-  ```
-  iat: <issued-at>
-  exp: <expiry>
-  sub: <subject>
-  username: <username>
-  ```
-
-- **401 Unauthorized:**
-  The token is invalid or missing.
-  ```json
-  {
-    "error": "Unauthorized"
-  }
-  ```
-
----
-
-## **Generate JWT Token**
-Use the `generate/main.go` file to create a JWT token for testing purposes.
-
-### Steps:
-1. Run the `generate/main.go` script:
-   ```bash
-   go run generate/main.go
-   ```
-
-2. A token will be printed to the console:
-   ```
-   Generated JWT Token: Bearer <your-token>
-   ```
-
-Copy this token and use it in the `Authorization` header of your requests.
-
----
-
-## **Testing**
-To test the plugin:
-
-1. Use a tool like Postman or cURL to send requests to the plugin.
-2. Set the `Authorization` header with a valid JWT token.
-
-### Example with cURL:
+## Pengujian
+### 1. Menghasilkan Token JWT
+Gunakan script di folder `generate` untuk membuat token JWT:
 ```bash
-curl -X GET http://localhost:8080/api/v1/resource \
-  -H "Authorization: Bearer <your-token>"
+cd generate
+export JWT_SECRET_KEY="your-secret-key"
+go run main.go
 ```
 
-### Example with Postman:
-- Create a new GET request.
-- Set the URL to `http://localhost:8080/api/v1/resource`.
-- Add the `Authorization` header with `Bearer <your-token>`.
-- Send the request.
+### 2. Menggunakan Postman
+1. Setel endpoint URL:
+   ```
+   http://localhost:8080
+   ```
+2. Tambahkan header:
+   ```
+   Authorization: Bearer <token>
+   ```
+3. Kirim request:
+   - Jika token valid, respons akan berupa status 200 dengan klaim dalam header.
+   - Jika token tidak valid, respons akan berupa status 401.
 
-Ensure that the response contains the expected claims in the headers if the token is valid.
+---
+
+## Contoh Output
+### Respons Berhasil
+```json
+{
+  "status_code": 200,
+  "headers": {
+    "iat": "1697029200",
+    "exp": "1697032800",
+    "sub": "foo",
+    "username": "foo"
+  }
+}
+```
+
+### Respons Gagal
+```json
+{
+  "status_code": 401,
+  "body": "Unauthorized"
+}
+```
+
+---
+
+## Catatan Tambahan
+- Pastikan secret key sama antara generator token dan plugin JWT.
+- Token memiliki masa berlaku yang diatur melalui klaim `exp`. Plugin akan menolak token yang kedaluwarsa.

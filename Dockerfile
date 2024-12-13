@@ -13,9 +13,6 @@ RUN go mod tidy && go build -o plugin-jwt main.go
 # Gunakan image minimal untuk hasil akhir
 FROM alpine:latest
 
-# Set Env Vars default (opsional, bisa di-overwrite saat runtime)
-ENV JWT_SECRET_KEY=default-secret-key
-
 # Copy binary dari stage builder ke stage ini
 COPY --from=builder /app/plugin-jwt /usr/local/bin/plugin-jwt
 
