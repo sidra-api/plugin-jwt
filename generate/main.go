@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -37,5 +36,5 @@ func main() {
 	// Menambahkan prefix "Bearer " agar token siap digunakan
 	tokenString = "Bearer " + tokenString
 
-	fmt.Println("Generated JWT Token: ", tokenString)
+	log.Println("Generated JWT Token: ", tokenString)
 }

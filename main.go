@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -25,15 +26,21 @@ func verifyJWT(tokenString string) (bool, *jwt.Token, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("invalid signing method")
+			log.Println("ERROR: Invalid signing method")
+			return nil, logError("invalid signing method")
 		}
 		return secretKey, nil
 	})
 
-	if err != nil || !token.Valid {
+	if err != nil {
+		log.Printf("ERROR: Token parsing failed: %v\n", err)
 		return false, token, err
 	}
-	return true, token, nil
+
+	if !token.Valid {
+		log.Println("ERROR: Token is invalid")
+	}
+	return token.Valid, token, err
 }
 
 // Fungsi handler adalah entry point untuk memproses request di Sidra Api
@@ -41,6 +48,7 @@ func handler(r server.Request) server.Response {
 	authHeader := r.Headers["Authorization"]
 
 	if !strings.HasPrefix(authHeader, "Bearer ") {
+		log.Println("INFO: Missing or invalid Authorization header")
 		return server.Response{
 			StatusCode: 401,
 			Body:       "Unauthorized",
@@ -52,6 +60,7 @@ func handler(r server.Request) server.Response {
 	valid, token, err := verifyJWT(tokenString)
 
 	if !valid || err != nil {
+		log.Println("INFO: Unauthorized access attempt")
 		return server.Response{
 			StatusCode: 401,
 			Body:       "Unauthorized",
@@ -60,6 +69,7 @@ func handler(r server.Request) server.Response {
 
 	payloads, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
+		log.Println("ERROR: Invalid token claims")
 		return server.Response{
 			StatusCode: 401,
 			Body:       "Unauthorized - Invalid token claims",
@@ -67,12 +77,13 @@ func handler(r server.Request) server.Response {
 	}
 
 	headers := convertHeaders(token.Header)
-	headers["iat"] = fmt.Sprintf("%v", payloads["iat"])
-	headers["exp"] = fmt.Sprintf("%v", payloads["exp"])
-	headers["sub"] = fmt.Sprintf("%v", payloads["sub"])
+	headers["iat"] = logValue(payloads["iat"])
+	headers["exp"] = logValue(payloads["exp"])
+	headers["sub"] = logValue(payloads["sub"])
 
 	username, ok := payloads["username"].(string)
     if !ok {
+		log.Println("ERROR: Username not found in token claims")
         return server.Response{
             StatusCode: 401,
             Body:       "Unauthorized - Username not found in token",
@@ -80,11 +91,25 @@ func handler(r server.Request) server.Response {
     }
 
     headers["username"] = username
+	log.Printf("INFO: Successful authentication for username: %s\n", username)
 
 	return server.Response{
 		StatusCode: 200,
 		Headers:    headers,
 	}
+}
+
+// Fungsi logValue untuk mencatat nilai dari klaim token
+func logValue(value interface{}) string {
+	log.Printf("INFO: Claim value: %v\n", value)
+	return fmt.Sprintf("%v", value)
+}
+
+// Fungsi logError untuk mencatat error dan mengembalikannya
+func logError(message string) error {
+	err := fmt.Errorf("%s", message)
+	log.Println("ERROR:", err)
+	return err
 }
 
 // Fungsi convertHeaders mengubah header token (interface{}) menjadi map[string]string
@@ -97,6 +122,7 @@ func convertHeaders(headers map[string]interface{}) map[string]string {
 }
 
 func main() {
+	log.Println("INFO: Starting JWT server")
 	server.NewServer("jwt", func(r server.Request) server.Response {
 		return handler(r)
 	}).Start()
