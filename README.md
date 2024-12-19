@@ -124,3 +124,4 @@ docker run -e JWT_SECRET_KEY="your-secret-key" -p 8080:8080 plugin-jwt
 
 - Ensure the secret key is consistent between the token generator and the JWT plugin.
 - Tokens have an expiration time controlled by the `exp` claim. The plugin rejects expired tokens.
+- Logs will provide detailed information about the request and verification process.
