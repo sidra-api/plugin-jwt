@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"os"
-	"time"
+	// "time"
 
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -23,10 +23,10 @@ func main() {
 	token := jwt.New(jwt.SigningMethodHS256)
 
 	// Menambahkan klaim (claims) ke token
-	claims := token.Claims.(jwt.MapClaims)
-	claims["iat"] = time.Now().Unix()
-	claims["exp"] = time.Now().Add(time.Minute * 100).Unix()
-	claims["username"] = "foo"
+	// claims := token.Claims.(jwt.MapClaims)
+	// claims["iat"] = time.Now().Unix()
+	// claims["exp"] = time.Now().Add(time.Minute * 100).Unix()
+	// claims["username"] = "foo"
 
 	tokenString, err := token.SignedString(secretKey)
 	if err != nil {
