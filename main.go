@@ -124,8 +124,8 @@ func convertHeaders(headers map[string]interface{}) map[string]string {
 func main() {
 	pluginName := os.Getenv("PLUGIN_NAME")
 	if pluginName == "" {
-		pluginName = "plugin-jwt" // Set default name
-		log.Println("PLUGIN_NAME not set, using default: plugin-jwt")
+		pluginName = "jwt" // Set default name
+		log.Println("PLUGIN_NAME not set, using default: jwt")
 	}
 
 	log.Println("INFO: Starting JWT server for plugin:", pluginName)

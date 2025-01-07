@@ -30,7 +30,7 @@ The JWT Plugin acts as middleware to verify JSON Web Tokens (JWT) on Sidra API. 
    ```
 3. Build the plugin:  
    ```bash
-   go build -o plugin-jwt main.go
+   go build -o jwt main.go
    ```
 
 ### **Environment Variables Configuration**
@@ -47,7 +47,7 @@ export JWT_SECRET_KEY="your-secret-key"
 #### Using Go Binary
 Run the binary directly:  
 ```bash
-./plugin-jwt
+./jwt
 ```
 
 #### Using Docker
